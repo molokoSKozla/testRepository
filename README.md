@@ -1,6 +1,7 @@
 # testRepository
-Repository for cases from Slas
 
+
+[YouCheatSheet](https://www.vagrantup.com/docs/provisioning/)
 ```
 After run vagrant file:
                                                             |               SOME COMPANY :)
@@ -21,5 +22,6 @@ After run vagrant file:
 
 ### Your task:
 1. first branch - undesterstand vagrant file and use provision from bash script file instead inline script.
-2. second branch - 
-3. third
+2. second branch - provision on ansible with same action as on bash.
+3. third branch - coming soon :)
+
