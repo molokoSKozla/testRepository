@@ -1,79 +1,73 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
 Vagrant.configure("2") do |config|
-    $script4RIC = <<-SCRIPT
-    sudo iptables -t nat -I POSTROUTING -j MASQUERADE
-    sudo ip r d default
-    sudo ip r a default via 10.199.199.1
-    sudo sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-    sudo sysctl -p
-    SCRIPT
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
 
-    $script4EWS = <<-SCRIPT
-    sudo iptables -t nat -I POSTROUTING -j MASQUERADE
-    sudo ip r d default
-    sudo ip r a default via 10.0.0.1
-    sudo sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-    sudo sysctl -p
-    sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-    sudo service ssh restart
-    sudo useradd -p '$6$xyz$rjarwc/BNZWcH6B31aAXWo1942.i7rCX5AT/oxALL5gCznYVGKh6nycQVZiHDVbnbu0BsQyPfBgqYveKcCgOE0' zt -m -s /bin/bash
-    autossh -f -N -R 50001:localhost:22 
-    SCRIPT
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "ubuntu/trusty64"
 
-    $script4IWS = <<-SCRIPT
-    sudo ip r d default
-    sudo ip r a default via 192.168.11.1
-    sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-    sudo service ssh restart
-    sudo useradd -p '$6$xyz$rjarwc/BNZWcH6B31aAXWo1942.i7rCX5AT/oxALL5gCznYVGKh6nycQVZiHDVbnbu0BsQyPfBgqYveKcCgOE0' user -m -s /bin/bash
-    SCRIPT
+  config.vm.provision :shell, path: "HelloWorld" 
+  config.vm.provision :shell, inline: "echo Helo,World! from INLINE"
 
-    $script4SII = <<-SCRIPT
-    sudo iptables -t nat -I POSTROUTING -j MASQUERADE
-    sudo locale-gen ru_RU.UTF-8
-    sudo sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-    sudo sysctl -p
-    sudo useradd -p '$6$xyz$rjarwc/BNZWcH6B31aAXWo1942.i7rCX5AT/oxALL5gCznYVGKh6nycQVZiHDVbnbu0BsQyPfBgqYveKcCgOE0' service_user -m -s /bin/bash
-    sudo mkdir /home/service_user/.ssh
-    sudo echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDUZO73gDTc/+xivmbhE+Mo0CKPe2RsXv1QXmycGq2+GzqP/yDiYK5SX8J5WaAxAF1Gk2rSfVL0CTMgqlFvchTJYQMWoytgru+gDItu39f0AtrfJwK5iDAEAEF9MEoosy/LQ4yvdRFItMGu7XkrM6kazkIuCz50jQrhQX0LlxyJXpXDjBB1EqLYD2qQR+dONSKqUUFwJKiJJNmY9XeLjMNJj/6QIb53vJb8xgPN/0W9SzpvYQPEc1/lQlep/0cNmW+7grAoiPKW2d3jrykCn9de9kXiar+16GT4QrxJlc/5k892gqNQ7mueMz2dnzxppPSGWM67ssxZ9pA6zNcDVE8R notfound@notfound-Lenovo-G570' > /home/service_user/.ssh/authorized_keys
-    SCRIPT
-    # password for all users - test
-    config.vm.provider :virtualbox do |v|
-      v.memory = 512
-    end
-    config.vm.define "server-in-internet" do |db|
-        db.vm.box = "ubuntu/xenial64"
-        db.vm.hostname = "server-in-internet"
-        db.vm.network :private_network, ip: "10.199.199.1",
-            virtualbox__intnet: "external-net"
-        db.vm.network :private_network, type: "dhcp"
-        db.vm.provision "shell", inline: $script4SII
-    end
-    config.vm.define "router-in-company" do |db|      # Only for masquerade!
-        db.vm.box = "ubuntu/xenial64"
-        db.vm.hostname = "router-in-company"
-        db.vm.network :private_network, ip: "10.199.199.2",
-            virtualbox__intnet: "external-net"
-        db.vm.network :private_network, ip: "10.0.0.1",
-            virtualbox__intnet: "intermediate-net"
-        db.vm.provision "shell", inline: $script4RIC
+  # Disable automatic box update checking. If you disable this, then
+  # boxes will only be checked for updates when the user runs
+  # `vagrant box outdated`. This is not recommended.
+  # config.vm.box_check_update = false
 
-    end
-    config.vm.define "ext-working-server" do |db|
-        db.vm.box = "ubuntu/xenial64"
-        db.vm.hostname = "ext-working-server"   
-        db.vm.network :private_network, ip: "10.0.0.2",
-            virtualbox__intnet: "intermediate-net"
-        db.vm.network :private_network, ip: "192.168.11.1",
-            virtualbox__intnet: "internal-net"
-        db.vm.provision "shell", inline: $script4EWS
-    end
-    (1..2).each do |i|
-        config.vm.define "internal-working-server-#{i}" do |db|
-            db.vm.box = "ubuntu/xenial64"
-            db.vm.hostname = "server-#{i}"
-            db.vm.network :private_network, ip: "192.168.11.1#{i}",
-                virtualbox__intnet: "internal-net"
-            db.vm.provision "shell", inline: $script4IWS
-        end
-    end
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8080" will access port 80 on the guest machine.
+  # NOTE: This will enable public access to the opened port
+  # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine and only allow access
+  # via 127.0.0.1 to disable public access
+  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+  # Create a private network, which allows host-only access to the machine
+  # using a specific IP.
+  # config.vm.network "private_network", ip: "192.168.33.10"
+
+  # Create a public network, which generally matched to bridged network.
+  # Bridged networks make the machine appear as another physical device on
+  # your network.
+  # config.vm.network "public_network"
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+  # config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+  #   vb.memory = "1024"
+  # end
+  #
+  # View the documentation for the provider you are using for more
+  # information on available options.
+
+  # Enable provisioning with a shell script. Additional provisioners such as
+  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
+  # documentation for more information about their specific syntax and use.
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update
+  #   apt-get install -y apache2
+  # SHELL
 end
