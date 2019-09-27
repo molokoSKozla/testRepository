@@ -21,6 +21,12 @@ After run vagrant file:
 ```
 
 ### Your task:
+0. Global task: 
+- memory must equal 512 for all VM
+- don't mount <b>vagrant</b> folder into VM
+- reduce disk size to 8GB
+- recommendation - please use ubuntu/xenial64 image :)
+-------
 1. first branch - undesterstand vagrant file and use provision from bash script file instead inline script.
 2. second branch - provision on ansible with same action as on bash.
 3. third branch - coming soon :)
